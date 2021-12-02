@@ -27,7 +27,10 @@ public class User extends JFrame {
     private JScrollPane ManagementHistory;
     private JPanel UserPanel;
     private JTable PackageTable;
-    ArrayList<PackageObject> list;
+    ArrayList<PackageObject> listPackage;
+    ArrayList<ActivityObject> listActivity;
+    ArrayList<PurchaseObject> listPurchase;
+
     UserObjectT currentUser;
 
     public User(){
@@ -37,15 +40,47 @@ public class User extends JFrame {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setVisible(true);
         showPackageTable();
+        showActivityTable("US001");
+        showPurchaseTable("US001");
         showUserInformation("US001");
     }
+
+    public void showActivityTable(String UserID) {
+        Connect app = new Connect();
+        listActivity=new ArrayList<ActivityObject>(app.selectActivity(UserID));
+        String data[][] = new String[listActivity.size()][];
+        for (int i = 0; i < listActivity.size(); i++) {
+            data[i] = new String[7];
+            data[i] = listActivity.get(i).objectConvert();
+        }
+        ManagementTable.setModel(new DefaultTableModel(
+                data,
+                new String[]{"ActivityID", "ManagerID",  "UserID", "Before", "After", "Type", "Date"}
+        ));
+    }
+
+    public void showPurchaseTable(String UserID) {
+        Connect app = new Connect();
+
+        listPurchase=new ArrayList<PurchaseObject>(app.selectPurchase(UserID));
+        String data[][] = new String[listPurchase.size()][];
+        for (int i = 0; i < listPurchase.size(); i++) {
+            data[i] = new String[4];
+            data[i] = listPurchase.get(i).objectConvert();
+        }
+        PaymentTable.setModel(new DefaultTableModel(
+                data,
+                new String[]{"PurchaseID", "PackageID",  "UserID", "Date"}
+        ));
+    }
+
     public void showPackageTable(){
         Connect app = new Connect();
-        list = new ArrayList<PackageObject>(app.selectPackageALL());
-        String data[][] = new String[list.size()][];
-        for (int i = 0; i < list.size(); i++) {
+        listPackage = new ArrayList<PackageObject>(app.selectPackageALL());
+        String data[][] = new String[listPackage.size()][];
+        for (int i = 0; i < listPackage.size(); i++) {
             data[i] = new String[6];
-            data[i] = list.get(i).objectConvert();
+            data[i] = listPackage.get(i).objectConvert();
         }
         PackageTable.setModel(new DefaultTableModel(
                 data,
@@ -243,7 +278,56 @@ class Connect {
         }
         return conn;
     }
+    public ArrayList<PurchaseObject> selectPurchase(String UserID) {
+        String sql = "SELECT * FROM PurchaseHistory WHERE UserID =? ";
+        ArrayList<PurchaseObject> list = new ArrayList<PurchaseObject>();
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String dateString = rs.getString("Date");
+                Date date = new SimpleDateFormat("MM-dd-yyyy").parse(dateString);
+                PurchaseObject temp = new PurchaseObject(rs.getString("PurchaseID"),
+                        rs.getString("PackageID"),
+                        rs.getString("UserID"),
+                        date);
+                list.add(temp);
+            }
 
+        } catch (SQLException | ParseException e) {
+            System.out.println(e.getMessage());
+        }
+        return list;
+    }
+
+    public ArrayList<ActivityObject> selectActivity(String UserID) {
+        String sql = "SELECT * FROM Activity WHERE UserID =? ";
+        ArrayList<ActivityObject> list = new ArrayList<ActivityObject>();
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String dateString = rs.getString("Date");
+                Date date = new SimpleDateFormat("MM-dd-yyyy").parse(dateString);
+                ActivityObject temp = new ActivityObject(rs.getString("ActivityID"),
+                        rs.getString("ManagerID"),
+                        rs.getString("UserID"),
+                        rs.getString("Before"),
+                        rs.getString("After"),
+                        rs.getString("Type"),
+                        date);
+                list.add(temp);
+            }
+
+        } catch (SQLException | ParseException e) {
+            System.out.println(e.getMessage());
+        }
+        return list;
+    }
     public ArrayList<PackageObject> selectPackageALL() {
         String sql = "SELECT * FROM Package";
         ArrayList<PackageObject> list = new ArrayList<PackageObject>();
