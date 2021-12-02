@@ -94,14 +94,14 @@
         </constraints>
         <properties/>
       </component>
-      <scrollpane id="5eaaa" binding="PackageTable">
+      <scrollpane id="5eaaa" binding="panel1">
         <constraints>
           <grid row="10" column="0" row-span="1" col-span="3" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties/>
         <border type="none"/>
         <children>
-          <component id="2f88d" class="javax.swing.JTable" binding="table1" default-binding="true">
+          <component id="2f88d" class="javax.swing.JTable" binding="PackageTable">
             <constraints/>
             <properties/>
           </component>
@@ -109,7 +109,7 @@
       </scrollpane>
       <component id="2ca72" class="javax.swing.JLabel" binding="tFNameU">
         <constraints>
-          <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="1" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <text value="Label"/>
@@ -178,7 +178,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="be12e" class="javax.swing.JTable" binding="table2" default-binding="true">
+          <component id="be12e" class="javax.swing.JTable" binding="PaymentTable">
             <constraints/>
             <properties/>
           </component>
@@ -191,7 +191,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="75eeb" class="javax.swing.JTable" binding="table3" default-binding="true">
+          <component id="75eeb" class="javax.swing.JTable" binding="ManagementTable">
             <constraints/>
             <properties/>
           </component>
