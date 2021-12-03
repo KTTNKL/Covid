@@ -377,8 +377,6 @@ public class Manager<tableModel> extends JFrame {
             }
         });
     }
-
-
     private void showUser(){
         userList = ManageUser.ViewAll();
         String data[][] = new String[userList.size()][];
