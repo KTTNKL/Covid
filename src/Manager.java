@@ -10,20 +10,20 @@ import java.util.logging.Logger;
 
 
 class UserObject{
-    String Userid;
-    String FirstName;
-    String LastName;
-    int YearOfBirth;
-    String City;
-    String District;
-    String Ward;
-    String State;
-    int Debt;
-    String Password;
-    String Username;
-    String UserType;
-    Boolean ManagerLock;
-    String Source;
+    private String Userid;
+    private String FirstName;
+    private String LastName;
+    private int YearOfBirth;
+    private String City;
+    private String District;
+    private String Ward;
+    private String State;
+    private int Debt;
+    private String Password;
+    private String Username;
+    private String UserType;
+    private Boolean ManagerLock;
+    private String Source;
 
     public UserObject(String userid, String firstName, String lastName, int yearOfBirth, String city, String district, String ward, String state, int debt, String password, String username, String userType, Boolean managerLock, String source) {
         Userid = userid;
@@ -311,6 +311,130 @@ class ManageUser{
             }
         }
     }
+
+    public static void delete(String id) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+
+        try {
+
+            connection = DriverManager.getConnection("jdbc:sqlite:src/Covid.db");
+
+            String sql = "delete from user where UserID = ?";
+            statement = connection.prepareStatement(sql);
+
+            statement.setString(1, id);
+
+            statement.execute();
+        } catch (SQLException ex) {
+            Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+
+    public static void update(UserObject usrobj){
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+
+            connection = DriverManager.getConnection("jdbc:sqlite:src/Covid.db");
+
+            String sql = "UPDATE User SET FirstName = ? , LastName = ?, YearOfBirth = ?, City = ?, District =?, Ward = ?, State =?, Source= ? "
+                    + "WHERE UserID = ?";
+            statement = connection.prepareStatement(sql);
+
+            statement.setString(1, usrobj.getFirstName());
+            statement.setString(2, usrobj.getLastName());
+            statement.setInt(3, usrobj.getYearOfBirth());
+            statement.setString(4, usrobj.getCity());
+            statement.setString(5, usrobj.getDistrict());
+            statement.setString(6, usrobj.getWard());
+            statement.setString(7, usrobj.getState());
+            statement.setString(8, usrobj.getSource());
+            statement.setString(9, usrobj.getUserid());
+
+            statement.execute();
+        } catch (SQLException ex) {
+            Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+    public static List<UserObject> SearchByFirstname(String firstname) {
+        List<UserObject> userList = new ArrayList<>();
+
+        Connection connection = null;
+        PreparedStatement statement = null;
+
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:src/Covid.db");
+
+            //query
+            String sql = "select * from User where firstname like ?";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, "%" + firstname + "%");
+
+            ResultSet res = statement.executeQuery();
+
+            while (res.next()) {
+                UserObject usrobj = new UserObject(res.getString("UserID"),
+                        res.getString("FirstName"), res.getString("LastName"),
+                        res.getInt("YearOfBirth"), res.getString("City"),
+                        res.getString("District"), res.getString("Ward"), res.getString("State"),
+                        res.getInt("Debt"), res.getString("Password"), res.getString("Username"),
+                        res.getString("UserType"), res.getBoolean("ManagerLock"), res.getString("Source"));
+                userList.add(usrobj);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return userList;
+    }
 }
 
 
@@ -333,10 +457,12 @@ public class Manager<tableModel> extends JFrame {
     private JButton packageButton;
     private JPanel ManagerPanel;
     private JComboBox comboBox1;
+    
 
     List<UserObject> userList = new ArrayList<>();
 
     public Manager(){
+
         setContentPane(ManagerPanel);
         setTitle("Manager");
         setSize(5000,2000);
@@ -348,7 +474,7 @@ public class Manager<tableModel> extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String UserID;
                 userList = ManageUser.ViewAll();
-                String []parts = userList.get(userList.size()-1).Userid.split("S");
+                String []parts = userList.get(userList.size()-1).getUserid().split("S");
                 int id_count = Integer.parseInt(parts[1]);
                 id_count += 1;
 
@@ -376,7 +502,88 @@ public class Manager<tableModel> extends JFrame {
                 showUser();
             }
         });
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                userList = ManageUser.ViewAll();
+                int selectedIndex = UserTable.getSelectedRow();
+                if (selectedIndex >= 0) {
+                    UserObject usr = userList.get(selectedIndex);
+
+                    int opt = JOptionPane.showConfirmDialog(null, "Do you want to delete this user?");
+                    // yes is 0, no is 1, cancel is 2
+                    if (opt == 0) {
+                        ManageUser.delete(usr.getUserid());
+                        showUser();
+                    }
+                }
+            }
+        });
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                userList = ManageUser.ViewAll();
+                int selectedIndex = UserTable.getSelectedRow();
+                if (selectedIndex >= 0) {
+                    UserObject usr = userList.get(selectedIndex);
+                    if(!tFName.getText().equals(""))usr.setFirstName(tFName.getText());
+                    if(!tLName.getText().equals(""))usr.setLastName(tLName.getText());
+                    if(!tYear.getText().equals(""))usr.setYearOfBirth(Integer.parseInt(tYear.getText()));
+                    if(!tCity.getText().equals(""))usr.setCity(tCity.getText());
+                    if(!tDistrict.getText().equals(""))usr.setDistrict(tDistrict.getText());
+                    if(!tWard.getText().equals(""))usr.setWard(tWard.getText());
+                    if(!tState.getText().equals(""))usr.setState(tState.getText());
+                    if(!tSource.getText().equals(""))usr.setSource(tSource.getText());
+                    usr.show();
+                    int opt = JOptionPane.showConfirmDialog(null, "Do you want to update this user?");
+                    // yes is 0, no is 1, cancel is 2
+                    if (opt == 0) {
+                        ManageUser.update(usr);
+                        showUser();
+                    }
+                }
+            }
+        });
+        findButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                userList = ManageUser.ViewAll();
+                String input = JOptionPane.showInputDialog("Find", "Enter firstname to search");
+                if (input != null && input.length() > 0) {
+                    userList = ManageUser.SearchByFirstname(input);
+                    String data[][] = new String[userList.size()][];
+                    for (int i = 0; i < userList.size(); i++) {
+                        data[i] = new String[10];
+                        data[i] = userList.get(i).objectConvert();
+                    }
+                    UserTable.setModel(new DefaultTableModel(
+                            data,
+                            new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
+                    ));
+                    clearTextField();
+                } else {
+                    showUser();
+                }
+            }
+        });
+        comboBox1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                userList = ManageUser.ViewAll();
+                String option = (String) comboBox1.getSelectedItem();
+                if(option.equals("Sort by Firstname")){
+                    sortByFirstname(userList);
+                    showUser();
+                }
+                else{
+                    sortByID(userList);
+                    showUser();
+                }
+            }
+        });
     }
+
+
     private void showUser(){
         userList = ManageUser.ViewAll();
         String data[][] = new String[userList.size()][];
@@ -388,8 +595,52 @@ public class Manager<tableModel> extends JFrame {
                 data,
                 new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
         ));
+        clearTextField();
 
+    }
+    private void clearTextField(){
+        tFName.setText("");
+        tLName.setText("");
+        tYear.setText("");
+        tCity.setText("");
+        tDistrict.setText("");
+        tWard.setText("");
+        tState.setText("");
+        tSource.setText("");
+    }
 
+    private void sortByFirstname(List<UserObject> userList){
+        int i, j;
+        UserObject key;
+        for (i = 1; i < userList.size(); i++)
+        {
+            key = userList.get(i);
+            j = i - 1;
+
+            while (j >= 0 && (userList.get(j).getFirstName().compareTo(key.getFirstName()))>0)
+            {
+                userList.set(j + 1, userList.get(j));
+                j = j - 1;
+            }
+            userList.set(j + 1, key);
+        }
+    }
+
+    private void sortByID(List<UserObject> userList){
+        int i, j;
+        UserObject key;
+        for (i = 1; i < userList.size(); i++)
+        {
+            key = userList.get(i);
+            j = i - 1;
+
+            while (j >= 0 && (userList.get(j).getUserid().compareTo(key.getUserid()))>0)
+            {
+                userList.set(j + 1, userList.get(j));
+                j = j - 1;
+            }
+            userList.set(j + 1, key);
+        }
     }
     public static void main(String[] args){
         new Manager();
