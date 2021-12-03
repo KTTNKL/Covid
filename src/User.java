@@ -31,7 +31,7 @@ public class User extends JFrame {
     ArrayList<ActivityObject> listActivity;
     ArrayList<PurchaseObject> listPurchase;
 
-    UserObjectT currentUser;
+    UserObject currentUser;
 
     public User(){
         setContentPane(UserPanel);
@@ -92,12 +92,12 @@ public class User extends JFrame {
         currentUser=app.GetInformationUser(UserID);
         tFNameU.setText(currentUser.getFirstName());
         tLNameU.setText(currentUser.getLastName());
-        tYOBU.setText(currentUser.getYOB());
+        tYOBU.setText(currentUser.getStringYearOfBirth());
         tCityU.setText(currentUser.getCity());
-        tDistictU.setText(currentUser.getDistict());
+        tDistictU.setText(currentUser.getDistrict());
         tWardU.setText(currentUser.getWard());
         tStateU.setText(currentUser.getState());
-        tDebtU.setText(currentUser.getDebt());
+        tDebtU.setText(currentUser.getStringDebt());
     }
 }
 
@@ -133,85 +133,6 @@ class PackageObject{
         data[4]=price;
         data[5]=stock;
         return data;
-    }
-}
-class UserObjectT{
-    private String ID;
-    private String firstName;
-    private String lastName;
-    private Integer YoB;
-    private String city;
-    private String distict;
-    private String ward;
-    private String state;
-    private Integer debt;
-
-    UserObjectT(){
-        ID="";
-    }
-    UserObjectT(String id, String fn,String ln,Integer yob ,String ct,String dt,String w,String s,Integer d){
-        ID=id;
-        firstName=fn;
-        lastName=ln;
-        YoB=yob;
-        city=ct;
-        distict=dt;
-        ward=w;
-        state=s;
-        debt=d;
-    }
-
-    void show(){
-        System.out.println(ID);
-        System.out.println(firstName);
-        System.out.println(lastName);
-        System.out.println(YoB);
-        System.out.println(city);
-        System.out.println(distict);
-        System.out.println(ward);
-        System.out.println(state);
-        System.out.println(debt);
-    }
-    String[] objectConvert(){
-        String Year=String.valueOf(YoB);
-        String Debt=String.valueOf(debt);
-
-        String data[]=new String[9];
-        data[0]=ID;
-        data[1]=firstName;
-        data[2]=lastName;
-        data[3]=Year;
-        data[4]=city;
-        data[5]=distict;
-        data[6]=ward;
-        data[7]=state;
-        data[8]=Debt;
-
-        return data;
-    }
-    String getFirstName(){
-        return firstName;
-    }
-    String getLastName(){
-        return lastName;
-    }
-    String getYOB(){
-        return String.valueOf(YoB);
-    }
-    String getCity(){
-        return city;
-    }
-    String getDistict(){
-        return distict;
-    }
-    String getWard(){
-        return ward;
-    }
-    String getState(){
-        return state;
-    }
-    String getDebt(){
-        return String.valueOf(debt);
     }
 }
 class ActivityObject{
@@ -352,16 +273,16 @@ class Connect {
         }
         return list;
     }
-    public UserObjectT GetInformationUser(String UserID) {
+    public UserObject GetInformationUser(String UserID) {
         String sql = "SELECT * FROM User WHERE UserID =?";
-        UserObjectT temp=new UserObjectT();
+        UserObject temp=new UserObject();
         try {
             Connection conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, UserID);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                temp = new UserObjectT(
+                temp = new UserObject(
                         rs.getString("UserID"),
                         rs.getString("FirstName"),
                         rs.getString("LastName"),

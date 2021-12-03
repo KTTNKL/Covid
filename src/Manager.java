@@ -41,6 +41,20 @@ class UserObject{
         ManagerLock = managerLock;
         Source = source;
     }
+    UserObject(){
+        Userid="";
+    }
+    UserObject(String id, String fn,String ln,Integer yob ,String ct,String dt,String w,String s,Integer d){
+        Userid=id;
+        FirstName=fn;
+        LastName=ln;
+        YearOfBirth=yob;
+        City=ct;
+        District=dt;
+        Ward=w;
+        State=s;
+        Debt=d;
+    }
 
     public String getUserid() {
         return Userid;
@@ -56,6 +70,9 @@ class UserObject{
 
     public int getYearOfBirth() {
         return YearOfBirth;
+    }
+    public String getStringYearOfBirth() {
+        return String.valueOf(YearOfBirth);
     }
 
     public String getCity() {
@@ -76,6 +93,10 @@ class UserObject{
 
     public int getDebt() {
         return Debt;
+    }
+
+    public String getStringDebt() {
+        return String.valueOf(Debt);
     }
 
     public String getPassword() {
