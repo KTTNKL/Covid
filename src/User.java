@@ -99,23 +99,28 @@ public class User extends JFrame {
                     PackageObject pkg= listPackage.get(selectedIndex);
                     int opt=JOptionPane.showConfirmDialog(null,"Do you want to buy this package");
                     if(opt==0){
-                        if(app.CheckLimitTimeUserBuyPackage("US001",pkg.getPackageID())){
-                            if(app.CheckLimitUserBuyPackage("US001",pkg.getPackageID())) {
-                                app.UserBuyPackage("US001", pkg.getPackageID(), pkg.getPrice());
+                        try {
+                            if(app.CheckLimitTimeUserBuyPackage("US001",pkg.getPackageID())){
+                                if(app.CheckLimitUserBuyPackage("US001",pkg.getPackageID())) {
+                                    app.UserBuyPackage("US001", pkg.getPackageID(), pkg.getPrice());
+                                    showPurchaseTable("US001");
+                                    showUserInformation("US001");
+                                }else{
+                                    JOptionPane.showMessageDialog(null,
+                                            "You have reached the limit",
+                                            "Can not buy package",
+                                            JOptionPane.WARNING_MESSAGE);
+                                }
                             }else{
                                 JOptionPane.showMessageDialog(null,
-                                        "You have reached the limit",
+                                        "Limit time for this package is passed",
                                         "Can not buy package",
                                         JOptionPane.WARNING_MESSAGE);
                             }
-                        }else{
-                            JOptionPane.showMessageDialog(null,
-                                    "Limit time for this package is passed",
-                                    "Can not buy package",
-                                    JOptionPane.WARNING_MESSAGE);
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
                         }
-                        showPurchaseTable("US001");
-                        showUserInformation("US001");
+
                     }
                 }
             }
@@ -472,15 +477,15 @@ class Connect {
         }
         return list;
     }
-    public Boolean CheckLimitTimeUserBuyPackage(String UserID,String PackageID){
+    public Boolean CheckLimitTimeUserBuyPackage(String UserID,String PackageID) throws SQLException {
 
         int limit_time=0;
         String date="";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy");
         String sql ="SELECT Limit_time FROM Package WHERE PackageID=?";
-
+        Connection conn =null;
         try {
-            Connection conn = this.connect();
+            conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, PackageID);
             ResultSet rs = pstmt.executeQuery();
@@ -493,7 +498,7 @@ class Connect {
         sql ="SELECT Date FROM PurchaseHistory WHERE PackageID=? and UserID=?";
 
         try {
-            Connection conn = this.connect();
+            conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, PackageID);
             pstmt.setString(2, UserID);
@@ -514,17 +519,22 @@ class Connect {
         LocalDate currentDate = LocalDate.parse(DateNow, formatter);
 
         if(limitDay.isAfter(currentDate)||limitDay.isEqual(currentDate)){
+            conn.close();
             return true;
         }
         else{
+            conn.close();
+
             return false;
         }
     }
-    public Boolean CheckLimitUserBuyPackage(String UserID,String PackageID){
+    public Boolean CheckLimitUserBuyPackage(String UserID,String PackageID) throws SQLException {
         int limit=0;
         String sql ="SELECT Limit_quantity FROM Package WHERE PackageID=?";
+        Connection conn =null;
+
         try {
-            Connection conn = this.connect();
+            conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, PackageID);
             ResultSet rs = pstmt.executeQuery();
@@ -535,6 +545,7 @@ class Connect {
             System.out.println(e.getMessage());
         }
         System.out.println(limit);
+        conn.close();
 
         return true;
     }
