@@ -570,14 +570,14 @@ public class Manager<tableModel> extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 userList = ManageUser.ViewAll();
-                String option = (String) comboBox1.getSelectedItem();
-                if(option.equals("Sort by Firstname")){
+                int option =comboBox1.getSelectedIndex();
+                if(option == 1){
                     sortByFirstname(userList);
-                    showUser();
+                    showUser(userList);
                 }
                 else{
                     sortByID(userList);
-                    showUser();
+                    showUser(userList);
                 }
             }
         });
@@ -596,8 +596,20 @@ public class Manager<tableModel> extends JFrame {
                 new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
         ));
         clearTextField();
-
     }
+    private void showUser(List<UserObject> userList){
+        String data[][] = new String[userList.size()][];
+        for (int i = 0; i < userList.size(); i++) {
+            data[i] = new String[10];
+            data[i] = userList.get(i).objectConvert();
+        }
+        UserTable.setModel(new DefaultTableModel(
+                data,
+                new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
+        ));
+        clearTextField();
+    }
+
     private void clearTextField(){
         tFName.setText("");
         tLName.setText("");
