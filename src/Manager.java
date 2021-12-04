@@ -2,11 +2,14 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 
 class UserObject{
@@ -453,7 +456,6 @@ public class Manager<tableModel> extends JFrame {
     private JTable UserTable;
     private JTextField tSource;
     private JScrollPane tablePanel;
-    private JButton backButton;
     private JButton packageButton;
     private JPanel ManagerPanel;
     private JComboBox comboBox1;
@@ -467,6 +469,7 @@ public class Manager<tableModel> extends JFrame {
         setTitle("Manager");
         setSize(5000,2000);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
         setVisible(true);
         showUser();
         addButton.addActionListener(new ActionListener() {
@@ -487,9 +490,16 @@ public class Manager<tableModel> extends JFrame {
                 else{
                     UserID = "US" + String.valueOf(id_count);
                 }
-                System.out.println(UserID);
+
                 String FirstName = tFName.getText();
                 String LastName = tLName.getText();
+                if(!isNumeric(tYear.getText())) {
+                    JOptionPane.showMessageDialog(null,
+                            "Year of birth should be a number.",
+                            "Warning",
+                            JOptionPane.WARNING_MESSAGE);
+                }
+                else{
                 int YearOfBirth = Integer.parseInt(tYear.getText());
                 String City = tCity.getText();
                 String District = tDistrict.getText();
@@ -500,6 +510,7 @@ public class Manager<tableModel> extends JFrame {
                 //usr.show();
                 ManageUser.insert(usr);
                 showUser();
+                }
             }
         });
         deleteButton.addActionListener(new ActionListener() {
@@ -524,23 +535,38 @@ public class Manager<tableModel> extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 userList = ManageUser.ViewAll();
                 int selectedIndex = UserTable.getSelectedRow();
+                boolean flag = true;
                 if (selectedIndex >= 0) {
                     UserObject usr = userList.get(selectedIndex);
-                    if(!tFName.getText().equals(""))usr.setFirstName(tFName.getText());
-                    if(!tLName.getText().equals(""))usr.setLastName(tLName.getText());
-                    if(!tYear.getText().equals(""))usr.setYearOfBirth(Integer.parseInt(tYear.getText()));
-                    if(!tCity.getText().equals(""))usr.setCity(tCity.getText());
-                    if(!tDistrict.getText().equals(""))usr.setDistrict(tDistrict.getText());
-                    if(!tWard.getText().equals(""))usr.setWard(tWard.getText());
-                    if(!tState.getText().equals(""))usr.setState(tState.getText());
-                    if(!tSource.getText().equals(""))usr.setSource(tSource.getText());
-                    usr.show();
-                    int opt = JOptionPane.showConfirmDialog(null, "Do you want to update this user?");
-                    // yes is 0, no is 1, cancel is 2
-                    if (opt == 0) {
-                        ManageUser.update(usr);
-                        showUser();
+                    if (!tFName.getText().equals("")) usr.setFirstName(tFName.getText());
+                    if (!tLName.getText().equals("")) usr.setLastName(tLName.getText());
+                    if (!tYear.getText().equals(""))
+                    {
+                        if(!isNumeric(tYear.getText())) {
+                            JOptionPane.showMessageDialog(null,
+                                    "Year of birth should be a number.",
+                                    "Warning",
+                                    JOptionPane.WARNING_MESSAGE);
+                                    flag = false;
+                        }
+                        else {
+                            usr.setYearOfBirth(Integer.parseInt(tYear.getText()));
+                        }
                     }
+                    if (!tCity.getText().equals("")) usr.setCity(tCity.getText());
+                    if (!tDistrict.getText().equals("")) usr.setDistrict(tDistrict.getText());
+                    if (!tWard.getText().equals("")) usr.setWard(tWard.getText());
+                    if (!tState.getText().equals("")) usr.setState(tState.getText());
+                    if (!tSource.getText().equals("")) usr.setSource(tSource.getText());
+                    if (flag) {
+                        int opt = JOptionPane.showConfirmDialog(null, "Do you want to update this user?");
+                        // yes is 0, no is 1, cancel is 2
+                        if (opt == 0) {
+                            ManageUser.update(usr);
+                            showUser();
+                        }
+                    }
+
                 }
             }
         });
@@ -579,6 +605,14 @@ public class Manager<tableModel> extends JFrame {
                     sortByID(userList);
                     showUser(userList);
                 }
+            }
+        });
+        packageButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new ManagerPackage();
+                dispose();
+
             }
         });
     }
@@ -654,6 +688,16 @@ public class Manager<tableModel> extends JFrame {
             userList.set(j + 1, key);
         }
     }
+
+    private Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
+
+    public boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        return pattern.matcher(strNum).matches();
+    }
+
     public static void main(String[] args){
         new Manager();
     }
