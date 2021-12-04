@@ -2,14 +2,22 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumnModel;
 import java.sql.DriverManager;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+
+
 class ManagerObject {
     private String ID;
     private String FirstName;
@@ -22,8 +30,9 @@ class ManagerObject {
     private String Password;
     private String UserType;
     private Boolean ManagerLock;
+    private String activities;
 
-    public ManagerObject(String id, String fn, String ln, int year, String city, String dis, String ward, String username, String pass, String type, boolean block){
+    public ManagerObject(String id, String fn, String ln, int year, String city, String dis, String ward, String username, String pass, String type, boolean block, String act){
         ID = id;
         FirstName = fn;
         LastName = ln;
@@ -35,7 +44,7 @@ class ManagerObject {
         Password = pass;
         UserType = type;
         ManagerLock = block;
-
+        activities = act;
     }
     public String getFirstName(){
         return FirstName;
@@ -67,9 +76,8 @@ class ManagerObject {
     public String getType(){
         return UserType;
     }
-    public boolean getManagerLock(){
-        return ManagerLock;
-    }
+    public boolean getManagerLock(){ return ManagerLock;}
+    public String getAct(){ return activities;}
 }
 public class Admin extends JFrame{
     private JTextField tFNameM;
@@ -87,14 +95,35 @@ public class Admin extends JFrame{
     private JScrollPane tableAdmin;
     private JPanel AdminPanel;
 
-    private String[] columnNames = { "ID", "First Name", "Last Name", "YearOfBirth", "City", "District", "Ward", "UserName", "Password", "UserType", "Lock" };;
+    private String[] columnNames = { "ID", "First Name", "Last Name", "YearOfBirth", "City", "District", "Ward", "UserName", "Password", "UserType", "Lock", "Activities" };;
     private Connection conn;
 
     List<ManagerObject> values;
+    List<String []> getActivity(){
+        String sql = "SELECT * FROM Activity";
+        List<String []> activities = new ArrayList<String []>();
+        try {
+            Statement stmt  = conn.createStatement();
+            ResultSet rs    = stmt.executeQuery(sql);
+
+            // loop through the result set
+            while (rs.next()) {
+                String dateString = rs.getString("Date");
+                Date date = new SimpleDateFormat("MM-dd-yyyy").parse(dateString);
+
+                activities.add(new String[] {rs.getString("ManagerID"),rs.getString("UserID"),rs.getString("Before"),rs.getString("After"),rs.getString("Type"),rs.getString("Date")});
+
+            }
+        } catch (SQLException | ParseException e) {
+            System.out.println(e.getMessage());
+        }
+        return activities;
+    }
     void loadData(){
         if(values != null)  values.clear();
         values = new ArrayList<ManagerObject>();
         String sql = "SELECT * FROM User WHERE UserType = 'Manager'";
+        List<String[]> activities = getActivity();
 
         try {
             Statement stmt  = conn.createStatement();
@@ -102,7 +131,14 @@ public class Admin extends JFrame{
 
             // loop through the result set
             while (rs.next()) {
-                values.add(new ManagerObject (rs.getString("UserID"),rs.getString("FirstName"),rs.getString("LastName"),rs.getInt("YearOfBirth"),rs.getString("City"), rs.getString("District"), rs.getString("Ward"), rs.getString("Username"), rs.getString("Password"), rs.getString("UserType"), rs.getBoolean("ManagerLock")));
+                String temp = "<html>";
+                for(int i = 0; i < activities.size();i++){
+                    if(activities.get(i)[0].equals(rs.getString("UserID"))){
+                        temp+= activities.get(i)[5] + ": " + activities.get(i)[1] + " (" + activities.get(i)[2] + "->" + activities.get(i)[3] + ", Type: " + activities.get(i)[4] + ")<br>";
+                    }
+                }
+                temp+= "</html>";
+                values.add(new ManagerObject ( rs.getString("UserID") ,rs.getString("FirstName"),rs.getString("LastName"),rs.getInt("YearOfBirth"),rs.getString("City"), rs.getString("District"), rs.getString("Ward"), rs.getString("Username"), rs.getString("Password"), rs.getString("UserType"), rs.getBoolean("ManagerLock"), temp));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -110,13 +146,37 @@ public class Admin extends JFrame{
         List<String[]> temp = new ArrayList<String[]>();
 
         for(int i = 0; i < values.size();i++){
-            temp.add(new String[] {values.get(i).getID(),values.get(i).getFirstName(),values.get(i).getLastName(),Integer.toString(values.get(i).getYear()),values.get(i).getCity(), values.get(i).getDistrict(), values.get(i).getWard(), values.get(i).getUserName(), values.get(i).getPassword(), values.get(i).getType(), Boolean.toString(values.get(i).getManagerLock())});
+            temp.add(new String[] {values.get(i).getID(),values.get(i).getFirstName(),values.get(i).getLastName(),Integer.toString(values.get(i).getYear()),values.get(i).getCity(), values.get(i).getDistrict(), values.get(i).getWard(), values.get(i).getUserName(), values.get(i).getPassword(), values.get(i).getType(), Boolean.toString(values.get(i).getManagerLock()), values.get(i).getAct()});
         }
 
         table1.setModel(new DefaultTableModel(
                 temp.toArray(new Object[][]{}),
                 columnNames
         ));
+        for (int row = 0; row < table1.getRowCount(); row++)
+        {
+            int rowHeight = table1.getRowHeight();
+
+            for (int column = 0; column < table1.getColumnCount(); column++)
+            {
+                Component comp = table1.prepareRenderer(table1.getCellRenderer(row, column), row, column);
+                rowHeight = Math.max(rowHeight, comp.getPreferredSize().height);
+            }
+
+            table1.setRowHeight(row, rowHeight);
+        }
+        final TableColumnModel columnModel = table1.getColumnModel();
+        for (int column = 0; column < table1.getColumnCount(); column++) {
+            int width = 15; // Min width
+            for (int row = 0; row < table1.getRowCount(); row++) {
+                TableCellRenderer renderer = table1.getCellRenderer(row, column);
+                Component comp = table1.prepareRenderer(renderer, row, column);
+                width = Math.max(comp.getPreferredSize().width +1 , width);
+            }
+            if(width > 300)
+                width=300;
+            columnModel.getColumn(column).setPreferredWidth(width);
+        }
     }
     void addManager(String ID, String password, String username){
         String sql = "INSERT INTO User(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, Password, UserName, UserType, ManagerLock ) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
