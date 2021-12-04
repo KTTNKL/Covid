@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -98,8 +99,23 @@ public class User extends JFrame {
                     PackageObject pkg= listPackage.get(selectedIndex);
                     int opt=JOptionPane.showConfirmDialog(null,"Do you want to buy this package");
                     if(opt==0){
-                        app.UserBuyPackage("US001",pkg.getPackageID());
+                        if(app.CheckLimitTimeUserBuyPackage("US001",pkg.getPackageID())){
+                            if(app.CheckLimitUserBuyPackage("US001",pkg.getPackageID())) {
+                                app.UserBuyPackage("US001", pkg.getPackageID(), pkg.getPrice());
+                            }else{
+                                JOptionPane.showMessageDialog(null,
+                                        "You have reached the limit",
+                                        "Can not buy package",
+                                        JOptionPane.WARNING_MESSAGE);
+                            }
+                        }else{
+                            JOptionPane.showMessageDialog(null,
+                                    "Limit time for this package is passed",
+                                    "Can not buy package",
+                                    JOptionPane.WARNING_MESSAGE);
+                        }
                         showPurchaseTable("US001");
+                        showUserInformation("US001");
                     }
                 }
             }
@@ -183,6 +199,15 @@ class PackageObject{
     }
     public String getPackageID() {
         return ID;
+    }
+    public Integer getPrice() {
+        return Price;
+    }
+    public Integer getLimit() {
+        return Limit;
+    }
+    public Integer getLimit_time() {
+        return Limit_time;
     }
     PackageObject(String id, String nm,Integer lm,Integer lmt ,Integer price,Integer stock){
         ID=id;
@@ -355,7 +380,7 @@ class Connect {
 
                 PackageObject temp = new PackageObject(rs.getString("PackageID"),
                         rs.getString("Name"),
-                        rs.getInt("Limit"),
+                        rs.getInt("Limit_quantity"),
                         rs.getInt("Limit_time"),
                         rs.getInt("Price"),
                         rs.getInt("Stock"));
@@ -408,7 +433,7 @@ class Connect {
                 temp = new PackageObject(
                         rs.getString("PackageID"),
                         rs.getString("Name"),
-                        rs.getInt("Limit"),
+                        rs.getInt("Limit_quantity"),
                         rs.getInt("Limit_time"),
                         rs.getInt("Price"),
                         rs.getInt("Stock")
@@ -435,7 +460,7 @@ class Connect {
             while (rs.next()) {
                 PackageObject temp = new PackageObject(rs.getString("PackageID"),
                         rs.getString("Name"),
-                        rs.getInt("Limit"),
+                        rs.getInt("Limit_quantity"),
                         rs.getInt("Limit_time"),
                         rs.getInt("Price"),
                         rs.getInt("Stock"));
@@ -447,7 +472,73 @@ class Connect {
         }
         return list;
     }
-    public void UserBuyPackage(String UserID,String PackageID){
+    public Boolean CheckLimitTimeUserBuyPackage(String UserID,String PackageID){
+
+        int limit_time=0;
+        String date="";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy");
+        String sql ="SELECT Limit_time FROM Package WHERE PackageID=?";
+
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, PackageID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                limit_time = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        sql ="SELECT Date FROM PurchaseHistory WHERE PackageID=? and UserID=?";
+
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, PackageID);
+            pstmt.setString(2, UserID);
+            ResultSet rs = pstmt.executeQuery();
+
+            date = rs.getString(1);
+
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        LocalDate firstDay = LocalDate.parse(date, formatter);
+        LocalDate limitDay=firstDay.plusDays(limit_time);
+
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd-yyyy");
+        LocalDateTime now = LocalDateTime.now();
+        String DateNow=dtf.format(now);
+        LocalDate currentDate = LocalDate.parse(DateNow, formatter);
+
+        if(limitDay.isAfter(currentDate)||limitDay.isEqual(currentDate)){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+    public Boolean CheckLimitUserBuyPackage(String UserID,String PackageID){
+        int limit=0;
+        String sql ="SELECT Limit_quantity FROM Package WHERE PackageID=?";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, PackageID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                limit = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        System.out.println(limit);
+
+        return true;
+    }
+    public void UserBuyPackage(String UserID,String PackageID,int Price){
         String sql = "INSERT INTO PurchaseHistory VALUES(?,?,?,?)";
         ArrayList<PurchaseObject> listPurchase=selectPurchase();
         String []parts = listPurchase.get(listPurchase.size()-1).getPurchaseID().split("C");
@@ -472,7 +563,6 @@ class Connect {
         try {
             Connection conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql);
-
             pstmt.setString(1, PurchaseID);
             pstmt.setString(2, PackageID);
             pstmt.setString(3, UserID);
@@ -482,154 +572,32 @@ class Connect {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+        sql = "SELECT Debt FROM User WHERE UserID=?";
+        int value=0;
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                value = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+
+        }
+        value+=Price;
+        sql = "UPDATE User SET Debt=? WHERE UserID=?";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, value);
+            pstmt.setString(2, UserID);
+            pstmt.execute();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
-//    public void insert(int id, String fn, String ln, String dob, String adr) {
-//        String sql = "INSERT INTO Student VALUES(?,?,?,?,?)";
-//
-//        try {
-//            Connection conn = this.connect();
-//            PreparedStatement pstmt = conn.prepareStatement(sql);
-//
-//            pstmt.setInt(1, id);
-//            pstmt.setString(2, fn);
-//            pstmt.setString(3, ln);
-//            pstmt.setString(4, dob);
-//            pstmt.setString(5, adr);
-//
-//            pstmt.execute();
-//        } catch (SQLException e) {
-//            System.out.println(e.getMessage());
-//        }
-//    }
-//
-//    public void delete(int id) {
-//        String sql = "DELETE FROM Student WHERE ID= ?";
-//
-//        try {
-//            Connection conn = this.connect();
-//            PreparedStatement pstmt = conn.prepareStatement(sql);
-//
-//            pstmt.setInt(1, id);
-//
-//            pstmt.execute();
-//        } catch (SQLException e) {
-//            System.out.println(e.getMessage());
-//        }
-//    }
-//
-//    public void update(int id, String fn, String ln, String dob, String adr) {
-//        System.out.println(id);
-//        System.out.println(fn);
-//        System.out.println(ln);
-//        System.out.println(dob);
-//        System.out.println(adr);
-//        int count = 1;
-//        int posF = 1;
-//        int checkF = 0;
-//        int posL = 1;
-//        int checkL = 0;
-//        int postD = 1;
-//        int checkD = 0;
-//        int posA = 1;
-//        int checkA = 0;
-//        String sql = "UPDATE Student SET";
-//        if (!Objects.equals(fn, "")) {
-//            sql += " 'First Name'=? ,";
-//            count += 1;
-//            checkF = 1;
-//        }
-//        if (!Objects.equals(ln, "")) {
-//            sql += " 'Last Name'=? ,";
-//            count += 1;
-//            posL += 1;
-//            postD += 1;
-//            posA += 1;
-//            checkL = 1;
-//        }
-//        if (!Objects.equals(dob, "")) {
-//            sql += " DOB=? ,";
-//            count += 1;
-//            postD += 1;
-//            posA += 1;
-//            checkD = 1;
-//        }
-//        if (!Objects.equals(adr, "")) {
-//            sql += " Address=? ";
-//            count += 1;
-//            posA += 1;
-//            checkA = 1;
-//        }
-//        sql += "WHERE ID=?";
-//
-//        try {
-//            Connection conn = this.connect();
-//            PreparedStatement pstmt = conn.prepareStatement(sql);
-//
-//            pstmt.setInt(count, id);
-//            if (checkF == 1)
-//                pstmt.setString(posF, fn);
-//            if (checkL == 1)
-//                pstmt.setString(posL, ln);
-//            if (checkD == 1)
-//                pstmt.setString(postD, dob);
-//            if (checkA == 1)
-//                pstmt.setString(posA, adr);
-//
-//            pstmt.execute();
-//        } catch (SQLException e) {
-//            System.out.println(e.getMessage());
-//        }
-//    }
-//
-//    public ArrayList<StudentObject> searchName(String ln) {
-//        String sql = "SELECT * FROM Student WHERE 'Last Name'='" + ln + "'";
-//        ArrayList<StudentObject> list = new ArrayList<StudentObject>();
-//        System.out.println(sql);
-//        try {
-//            Connection conn = this.connect();
-//            Statement sm = conn.createStatement();
-//            ResultSet rs = sm.executeQuery(sql);
-//
-//            while (rs.next()) {
-//
-//                String dateString = rs.getString("DOB");
-//                Date date = new SimpleDateFormat("MM-dd-yyyy").parse(dateString);
-//                StudentObject temp = new StudentObject(rs.getInt("ID"),
-//                        rs.getString("First Name"),
-//                        rs.getString("Last Name"),
-//                        date,
-//                        rs.getString("Address"));
-//                list.add(temp);
-//            }
-//        } catch (SQLException | ParseException e) {
-//            System.out.println(e.getMessage());
-//        }
-//
-//        return list;
-//    }
-//
-//    public StudentObject searchID(int ID) {
-//        String sql = "SELECT * FROM Student WHERE ID =?";
-//        StudentObject temp = new StudentObject();
-//        try {
-//            Connection conn = this.connect();
-//            PreparedStatement pstmt = conn.prepareStatement(sql);
-//            pstmt.setInt(1, ID);
-//            ResultSet rs = pstmt.executeQuery();
-//            while (rs.next()) {
-//                String dateString = rs.getString("DOB");
-//                Date date = new SimpleDateFormat("MM-dd-yyyy").parse(dateString);
-//                temp = new StudentObject(rs.getInt("ID"),
-//                        rs.getString("First Name"),
-//                        rs.getString("Last Name"),
-//                        date,
-//                        rs.getString("Address"));
-//            }
-//        } catch (SQLException | ParseException e) {
-//            System.out.println(e.getMessage());
-//        }
-//        return temp;
-//    }
 }
 class UserRun{
     public static void main(String[] args) {
