@@ -132,7 +132,7 @@ public class AdminTreatmentPlace extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 int numOfID = values.size() + 1;
                 String ID;
-                if(numOfID < 10)    ID = "MA" + "00" + String.valueOf(numOfID);
+                if(numOfID < 10)    ID = "TM" + "00" + String.valueOf(numOfID);
                 else if(numOfID < 100)   ID = "MA" + "0" + String.valueOf(numOfID);
                 else ID = "MA" + String.valueOf(numOfID);
 
