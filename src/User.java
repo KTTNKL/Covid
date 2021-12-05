@@ -10,12 +10,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 public class User extends JFrame {
     private JButton findButton;
     private JButton buyButton;
-    private JComboBox comboBox1;
+    private JComboBox packageSort;
     private JLabel tFNameU;
     private JLabel tLNameU;
     private JLabel tYOBU;
@@ -125,6 +126,23 @@ public class User extends JFrame {
                 }
             }
         });
+        packageSort.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Connect app = new Connect();
+
+                listPackage = new ArrayList<PackageObject>(app.selectPackageALL());;
+                int option =packageSort.getSelectedIndex();
+                if(option == 1){
+                    sortByFirstname(listPackage);
+                    showPackageTable(listPackage);
+                }
+                else{
+                    sortByID(listPackage);
+                    showPackageTable(listPackage);
+                }
+            }
+        });
     }
 
     public void showActivityTable(String UserID) {
@@ -190,6 +208,38 @@ public class User extends JFrame {
         tStateU.setText(currentUser.getState());
         tDebtU.setText(currentUser.getStringDebt());
     }
+    private void sortByFirstname(List<PackageObject> listPackage){
+        int i, j;
+        PackageObject key;
+        for (i = 1; i < listPackage.size(); i++)
+        {
+            key = listPackage.get(i);
+            j = i - 1;
+
+            while (j >= 0 && (listPackage.get(j).getPackageName().compareTo(key.getPackageName()))>0)
+            {
+                listPackage.set(j + 1, listPackage.get(j));
+                j = j - 1;
+            }
+            listPackage.set(j + 1, key);
+        }
+    }
+    private void sortByID(List<PackageObject> listPackage){
+        int i, j;
+        PackageObject key;
+        for (i = 1; i < listPackage.size(); i++)
+        {
+            key = listPackage.get(i);
+            j = i - 1;
+
+            while (j >= 0 && (listPackage.get(j).getPackageID().compareTo(key.getPackageID()))>0)
+            {
+                listPackage.set(j + 1, listPackage.get(j));
+                j = j - 1;
+            }
+            listPackage.set(j + 1, key);
+        }
+    }
 }
 
 class PackageObject{
@@ -204,6 +254,9 @@ class PackageObject{
     }
     public String getPackageID() {
         return ID;
+    }
+    public String getPackageName() {
+        return Name;
     }
     public Integer getPrice() {
         return Price;
@@ -530,6 +583,8 @@ class Connect {
     }
     public Boolean CheckLimitUserBuyPackage(String UserID,String PackageID) throws SQLException {
         int limit=0;
+        int count=0;
+
         String sql ="SELECT Limit_quantity FROM Package WHERE PackageID=?";
         Connection conn =null;
 
@@ -544,10 +599,26 @@ class Connect {
         }catch (SQLException e){
             System.out.println(e.getMessage());
         }
-        System.out.println(limit);
-        conn.close();
 
-        return true;
+        sql ="SELECT COUNT(*) FROM PurchaseHistory WHERE PackageID=?";
+        try {
+            conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, PackageID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                count = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        conn.close();
+        if(count<limit){
+            return true;
+
+        }else{
+            return false;
+        }
     }
     public void UserBuyPackage(String UserID,String PackageID,int Price){
         String sql = "INSERT INTO PurchaseHistory VALUES(?,?,?,?)";
