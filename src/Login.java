@@ -44,7 +44,7 @@ public class Login extends JFrame {
                                 dispose();
 
                             }else if(tfUsername.getText().startsWith("M")){
-                                new Manager();
+                                new Manager(tfUsername.getText());
                                 dispose();
 
                             }else{
