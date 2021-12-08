@@ -330,7 +330,7 @@ public class ManagerPackage extends JFrame{
 
     List<Manager_PackageObject> listPackage = new ArrayList<>();
 
-    public ManagerPackage(){
+    public ManagerPackage(String CurrentUserID){
         setContentPane(ManagerPackagePanel);
         setTitle("Package");
         setSize(5000,2000);
@@ -392,7 +392,7 @@ public class ManagerPackage extends JFrame{
         backButtonManger.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                new Manager();
+                new Manager(CurrentUserID);
                 dispose();
             }
         });

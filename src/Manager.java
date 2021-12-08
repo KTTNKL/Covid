@@ -2,11 +2,14 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -27,8 +30,9 @@ class UserObject{
     private String UserType;
     private Boolean ManagerLock;
     private String Source;
+    private String TreatmentPlace;
 
-    public UserObject(String userid, String firstName, String lastName, int yearOfBirth, String city, String district, String ward, String state, int debt, String password, String username, String userType, Boolean managerLock, String source) {
+    public UserObject(String userid, String firstName, String lastName, int yearOfBirth, String city, String district, String ward, String state, int debt, String password, String username, String userType, Boolean managerLock, String source, String treatmentPlace) {
         Userid = userid;
         FirstName = firstName;
         LastName = lastName;
@@ -43,6 +47,7 @@ class UserObject{
         UserType = userType;
         ManagerLock = managerLock;
         Source = source;
+        TreatmentPlace = treatmentPlace;
     }
     UserObject(){
         Userid="";
@@ -118,9 +123,9 @@ class UserObject{
         return ManagerLock;
     }
 
-    public String getSource(){
-        return Source;
-    }
+    public String getSource(){ return Source;}
+
+    public String getTreatmentPlace(){return TreatmentPlace;}
 
     public void setUserid(String userid) {
         Userid = userid;
@@ -178,11 +183,13 @@ class UserObject{
         Source = source;
     }
 
+    public void setTreatmentPlace(String treatmentPlace){TreatmentPlace = treatmentPlace;}
+
     String[] objectConvert(){
         String Year=String.valueOf(YearOfBirth);
         String D=String.valueOf(Debt);
 
-        String data[]=new String[10];
+        String data[]=new String[11];
         data[0]= Userid;
         data[1]= FirstName;
         data[2]=LastName;
@@ -193,6 +200,7 @@ class UserObject{
         data[7]=State;
         data[8]= D;
         data[9]=Source;
+        data[10]= TreatmentPlace;
 
         return data;
     }
@@ -212,10 +220,200 @@ class UserObject{
         System.out.println(UserType);
         System.out.println(ManagerLock);
         System.out.println(Source);
+        System.out.println(TreatmentPlace);
     }
 
 
 }
+
+class Manager_ActivityObject{
+    private String ActivityID;
+    private String ManagerID;
+    private String UserID;
+    private String Before;
+    private String After;
+    private String Type;
+    private Date DateAc;
+
+    public Manager_ActivityObject(String activityID, String managerID, String userID, String before, String after, String type, Date dateAc) {
+        ActivityID = activityID;
+        ManagerID = managerID;
+        UserID = userID;
+        Before = before;
+        After = after;
+        Type = type;
+        DateAc = dateAc;
+    }
+
+    public String getActivityID() {
+        return ActivityID;
+    }
+
+    public String getManagerID() {
+        return ManagerID;
+    }
+
+    public String getUserID() {
+        return UserID;
+    }
+
+    public String getBefore() {
+        return Before;
+    }
+
+    public String getAfter() {
+        return After;
+    }
+
+    public String getType() {
+        return Type;
+    }
+
+    public Date getDateAc() {
+        return DateAc;
+    }
+
+    public void setActivityID(String activityID) {
+        ActivityID = activityID;
+    }
+
+    public void setManagerID(String managerID) {
+        ManagerID = managerID;
+    }
+
+    public void setUserID(String userID) {
+        UserID = userID;
+    }
+
+    public void setBefore(String before) {
+        Before = before;
+    }
+
+    public void setAfter(String after) {
+        After = after;
+    }
+
+    public void setType(String type) {
+        Type = type;
+    }
+
+    public void setDateAc(Date dateAc) {
+        DateAc = dateAc;
+    }
+
+    String[] objectConvert(){
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+        String strDate = formatter.format(DateAc);
+        String data[]=new String[7];
+        data[0]=ActivityID;
+        data[1]=ManagerID;
+        data[2]=UserID;
+        data[3]=Before;
+        data[4]=After;
+        data[5]=Type;
+        data[6]=strDate;
+        return data;
+    }
+}
+
+class ManageActivity{
+    public static List<Manager_ActivityObject> ViewAll(){
+        List<Manager_ActivityObject> activityList = new ArrayList<>();
+
+        Connection connection = null;
+        Statement statement = null;
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:src/covid.db");
+            String sql = "SELECT * FROM Activity ";
+            statement = connection.createStatement();
+
+            ResultSet res = statement.executeQuery(sql);
+
+            while (res.next()) {
+                String dateString = res.getString("Date");
+                Date date = new SimpleDateFormat("MM-dd-yyyy").parse(dateString);
+                Manager_ActivityObject acobj = new Manager_ActivityObject(res.getString("ActivityID"),
+                        res.getString("ManagerID"),
+                        res.getString("UserID"),
+                        res.getString("Before"),
+                        res.getString("After"),
+                        res.getString("Type"),
+                        date);
+
+                activityList.add(acobj);
+            }
+
+        } catch (SQLException | ParseException ex) {
+            Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if(statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+
+        return activityList;
+    }
+    public static void insert(Manager_ActivityObject acobj) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:src/covid.db");
+
+            String sql = "INSERT INTO Activity(ActivityID, ManagerID, UserID, Before, After, Type, Date) VALUES(?, ?, ?, ?, ?, ? ,? )";
+            statement = connection.prepareStatement(sql);
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM-dd-yyyy");
+            LocalDateTime now = LocalDateTime.now();
+
+            String date=dtf.format(now);
+
+            statement.setString(1, acobj.getActivityID());
+            statement.setString(2, acobj.getManagerID());
+            statement.setString(3, acobj.getUserID());
+            statement.setString(4, acobj.getBefore());
+            statement.setString(5, acobj.getAfter());
+            statement.setString(6, acobj.getType());
+            statement.setString(7, date);
+
+
+            statement.execute();
+        } catch (SQLException ex) {
+            Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if(statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+
+
+}
+
 
 class ManageUser{
     public static List<UserObject> ViewAll(){
@@ -239,7 +437,7 @@ class ManageUser{
                         res.getInt("YearOfBirth"), res.getString("City"),
                         res.getString("District"), res.getString("Ward"), res.getString("State"),
                         res.getInt("Debt"),res.getString("Password"), res.getString("Username"),
-                        res.getString("UserType"), res.getBoolean("ManagerLock"), res.getString("Source"));
+                        res.getString("UserType"), res.getBoolean("ManagerLock"), res.getString("Source"), res.getString("TreatmentPlace"));
 
                 userList.add(usrobj);
             }
@@ -275,7 +473,7 @@ class ManageUser{
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:src/covid.db");
 
-            String sql = "INSERT INTO User(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, State, Debt, Password, Username, UserType, ManagerLock, Source) VALUES(?, ?, ?, ?, ?, ? ,? ,? ,? ,? ,?, ?, null, ?)";
+            String sql = "INSERT INTO User(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, State, Debt, Password, Username, UserType, ManagerLock, Source, TreatmentPlace) VALUES(?, ?, ?, ?, ?, ? ,? ,? ,? ,? ,?, ?, null, ?, ?)";
             statement = connection.prepareStatement(sql);
 
             statement.setString(1, usrobj.getUserid());
@@ -292,6 +490,7 @@ class ManageUser{
             statement.setString(12, usrobj.getUserType());
             //statement.setBoolean(13, usrobj.getManagerLock());
             statement.setString(13, usrobj.getSource());
+            statement.setString(14, usrobj.getTreatmentPlace());
 
             statement.execute();
         } catch (SQLException ex) {
@@ -357,7 +556,7 @@ class ManageUser{
 
             connection = DriverManager.getConnection("jdbc:sqlite:src/Covid.db");
 
-            String sql = "UPDATE User SET FirstName = ? , LastName = ?, YearOfBirth = ?, City = ?, District =?, Ward = ?, State =?, Source= ? "
+            String sql = "UPDATE User SET FirstName = ? , LastName = ?, YearOfBirth = ?, City = ?, District =?, Ward = ?, State =?, Source= ?, TreatmentPlace =? "
                     + "WHERE UserID = ?";
             statement = connection.prepareStatement(sql);
 
@@ -369,7 +568,9 @@ class ManageUser{
             statement.setString(6, usrobj.getWard());
             statement.setString(7, usrobj.getState());
             statement.setString(8, usrobj.getSource());
-            statement.setString(9, usrobj.getUserid());
+            statement.setString(9, usrobj.getTreatmentPlace());
+            statement.setString(10, usrobj.getUserid());
+
 
             statement.execute();
         } catch (SQLException ex) {
@@ -414,7 +615,7 @@ class ManageUser{
                         res.getInt("YearOfBirth"), res.getString("City"),
                         res.getString("District"), res.getString("Ward"), res.getString("State"),
                         res.getInt("Debt"), res.getString("Password"), res.getString("Username"),
-                        res.getString("UserType"), res.getBoolean("ManagerLock"), res.getString("Source"));
+                        res.getString("UserType"), res.getBoolean("ManagerLock"), res.getString("Source"), res.getString("TreatmentPlace"));
                 userList.add(usrobj);
             }
         } catch (SQLException ex) {
@@ -438,6 +639,43 @@ class ManageUser{
         }
         return userList;
     }
+
+    public static void insertAccount (String id){
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:src/account.db");
+
+            String sql = "INSERT INTO Account(UserID, AccountBalance) VALUES(?, ?)";
+            statement = connection.prepareStatement(sql);
+
+
+            statement.setString(1, id);
+            statement.setInt(2, 500000);
+
+
+
+            statement.execute();
+        } catch (SQLException ex) {
+            Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if(statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManageUser.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
 }
 
 
@@ -459,11 +697,12 @@ public class Manager<tableModel> extends JFrame {
     private JButton packageButton;
     private JPanel ManagerPanel;
     private JComboBox comboBox1;
-    
+    private JTextField tTreatmentPlace;
+
 
     List<UserObject> userList = new ArrayList<>();
 
-    public Manager(){
+    public Manager(String CurrentUserID){
 
         setContentPane(ManagerPanel);
         setTitle("Manager");
@@ -506,9 +745,11 @@ public class Manager<tableModel> extends JFrame {
                 String Ward = tWard.getText();
                 String State = tState.getText();
                 String Source = tSource.getText();
-                UserObject  usr = new UserObject(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, State, 0, "123456789", UserID+String.valueOf(YearOfBirth), "User", null, Source);
+                String Treatment = tTreatmentPlace.getText();
+                UserObject  usr = new UserObject(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, State, 0, "123456789", UserID+String.valueOf(YearOfBirth), "User", null, Source, Treatment);
                 //usr.show();
                 ManageUser.insert(usr);
+                ManageUser.insertAccount(UserID);
                 showUser();
                 }
             }
@@ -556,8 +797,75 @@ public class Manager<tableModel> extends JFrame {
                     if (!tCity.getText().equals("")) usr.setCity(tCity.getText());
                     if (!tDistrict.getText().equals("")) usr.setDistrict(tDistrict.getText());
                     if (!tWard.getText().equals("")) usr.setWard(tWard.getText());
-                    if (!tState.getText().equals("")) usr.setState(tState.getText());
+                    if (!tState.getText().equals("")) {
+                        String Before = userList.get(selectedIndex).getState();
+                        usr.setState(tState.getText());
+                        // xu li state lien quan
+                        String AcID;
+                        List<Manager_ActivityObject> activityList = ManageActivity.ViewAll();
+                        String[] parts = activityList.get(activityList.size() - 1).getActivityID().split("C");
+                        int id_count = Integer.parseInt(parts[1]);
+                        id_count += 1;
+
+                        if (id_count < 10) {
+                            AcID = "AC00" + String.valueOf(id_count);
+                        } else if (id_count >= 10 && id_count < 100) {
+                            AcID = "AC0" + String.valueOf(id_count);
+                        } else {
+                            AcID = "AC" + String.valueOf(id_count);
+                        }
+                        Manager_ActivityObject acobj = new Manager_ActivityObject(AcID, CurrentUserID, usr.getUserid(),Before , tState.getText(),"State",null);
+                        ManageActivity.insert(acobj);
+
+                        List<UserObject> related = find_f_after(usr);
+                        for (int i = 0; i < related.size(); ++i) {
+                            char n = usr.getState().charAt(1);
+                            int num = Character.getNumericValue(n);
+                            num += 1;
+                            Before = related.get(i).getState();
+                            related.get(i).setState("F" + Integer.toString(num));
+                            ManageUser.update(related.get(i));
+
+                            activityList = ManageActivity.ViewAll();
+                            parts = activityList.get(activityList.size() - 1).getActivityID().split("C");
+                            id_count = Integer.parseInt(parts[1]);
+                            id_count += 1;
+
+                            if (id_count < 10) {
+                                AcID = "AC00" + String.valueOf(id_count);
+                            } else if (id_count >= 10 && id_count < 100) {
+                                AcID = "AC0" + String.valueOf(id_count);
+                            } else {
+                                AcID = "AC" + String.valueOf(id_count);
+                            }
+                            acobj = new Manager_ActivityObject(AcID, CurrentUserID, related.get(i).getUserid(),Before , related.get(i).getState(),"State",null);
+                            ManageActivity.insert(acobj);
+                        }
+                    }
+
+
                     if (!tSource.getText().equals("")) usr.setSource(tSource.getText());
+
+                    if(!tTreatmentPlace.getText().equals("")){
+                        String Before = userList.get(selectedIndex).getTreatmentPlace();
+                        usr.setTreatmentPlace(tTreatmentPlace.getText());
+                        String AcID;
+                        List<Manager_ActivityObject> activityList = ManageActivity.ViewAll();
+                        String[] parts = activityList.get(activityList.size() - 1).getActivityID().split("C");
+                        int id_count = Integer.parseInt(parts[1]);
+                        id_count += 1;
+
+                        if (id_count < 10) {
+                            AcID = "AC00" + String.valueOf(id_count);
+                        } else if (id_count >= 10 && id_count < 100) {
+                            AcID = "AC0" + String.valueOf(id_count);
+                        } else {
+                            AcID = "AC" + String.valueOf(id_count);
+                        }
+                        Manager_ActivityObject acobj = new Manager_ActivityObject(AcID, CurrentUserID, usr.getUserid(),Before , tTreatmentPlace.getText(),"TreatmentPlace",null);
+                        ManageActivity.insert(acobj);
+
+                    }
                     if (flag) {
                         int opt = JOptionPane.showConfirmDialog(null, "Do you want to update this user?");
                         // yes is 0, no is 1, cancel is 2
@@ -579,12 +887,12 @@ public class Manager<tableModel> extends JFrame {
                     userList = ManageUser.SearchByFirstname(input);
                     String data[][] = new String[userList.size()][];
                     for (int i = 0; i < userList.size(); i++) {
-                        data[i] = new String[10];
+                        data[i] = new String[11];
                         data[i] = userList.get(i).objectConvert();
                     }
                     UserTable.setModel(new DefaultTableModel(
                             data,
-                            new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
+                            new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source", "TreatmentPlace"}
                     ));
                     clearTextField();
                 } else {
@@ -610,7 +918,7 @@ public class Manager<tableModel> extends JFrame {
         packageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                new ManagerPackage();
+                new ManagerPackage(CurrentUserID);
                 dispose();
 
             }
@@ -622,24 +930,24 @@ public class Manager<tableModel> extends JFrame {
         userList = ManageUser.ViewAll();
         String data[][] = new String[userList.size()][];
         for (int i = 0; i < userList.size(); i++) {
-            data[i] = new String[10];
+            data[i] = new String[11];
             data[i] = userList.get(i).objectConvert();
         }
         UserTable.setModel(new DefaultTableModel(
                 data,
-                new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
+                new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source", "TreatmentPlace"}
         ));
         clearTextField();
     }
     private void showUser(List<UserObject> userList){
         String data[][] = new String[userList.size()][];
         for (int i = 0; i < userList.size(); i++) {
-            data[i] = new String[10];
+            data[i] = new String[11];
             data[i] = userList.get(i).objectConvert();
         }
         UserTable.setModel(new DefaultTableModel(
                 data,
-                new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source"}
+                new String[]{"UserID", "First Name", "Last Name", "Year of Birth", "City", "District", "Ward", "State", "Debt", "Source", "TreatmentPlace"}
         ));
         clearTextField();
     }
@@ -653,6 +961,7 @@ public class Manager<tableModel> extends JFrame {
         tWard.setText("");
         tState.setText("");
         tSource.setText("");
+        tTreatmentPlace.setText("");
     }
 
     private void sortByFirstname(List<UserObject> userList){
@@ -698,7 +1007,25 @@ public class Manager<tableModel> extends JFrame {
         return pattern.matcher(strNum).matches();
     }
 
+
+    public List<UserObject> find_f_after(UserObject usr){
+        List<UserObject> userList =  ManageUser.ViewAll();
+        List<UserObject> related = new ArrayList<>();
+        if(usr.getState().compareTo("Khoi benh")!=0){
+            for(int i=0; i<userList.size(); ++i)
+            {
+                if(userList.get(i).getSource()!=null) {
+                    if (userList.get(i).getSource().compareTo(usr.getUserid()) == 0) {
+
+                        related.add(userList.get(i));
+                    }
+                }
+            }
+        }
+        return related;
+
+    }
     public static void main(String[] args){
-        new Manager();
+        new Manager("MA002");
     }
 }
