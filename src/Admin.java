@@ -214,6 +214,20 @@ public class Admin extends JFrame{
             System.out.println(e.getMessage());
         }
     }
+    void updatePassword(String ID, String password){
+        String sql = "UPDATE User SET Password = ? WHERE UserID = ?";
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            // set the corresponding param
+            pstmt.setString(1, password);
+            pstmt.setString(2, ID);
+            // update
+            pstmt.executeUpdate();
+            loadData();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
     void updateInformation(String id, String fn, String ln, int year, String city, String dis, String ward){
         String sql = "UPDATE User SET FirstName = ?, LastName = ?, YearOfBirth = ?, City = ?, District = ?, Ward = ? WHERE UserID = ?";
 
@@ -248,8 +262,21 @@ public class Admin extends JFrame{
             System.out.println(e.getMessage());
         }
     }
+    String getPasswordAdmin(String ID) {
+        String sql = "SELECT * FROM User WHERE UserID = 'AD001'";
+        String password ="";
+        try {
+            Statement stmt  = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            password = rs.getString("Password");
 
-    public Admin(){
+            } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return password;
+    }
+
+    public Admin() throws NoSuchAlgorithmException, InvalidKeySpecException {
         String url = "jdbc:sqlite:D:/Java/Covid/src/covid.db";
         conn = null;
         try {
@@ -257,6 +284,18 @@ public class Admin extends JFrame{
             System.out.println("Connection to SQLite has been established.");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+        }
+        if(Hash.checkPassword(getPasswordAdmin("AD001"),"123456789")){
+            String result = (String)JOptionPane.showInputDialog(
+                    null,
+                    "This is the first time admin log in, you need to change password",
+                    "Change Password",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    "123456789"
+            );
+            updatePassword("AD001", Hash.getPasswordHash(result));
         }
         loadData();
 
@@ -311,9 +350,8 @@ public class Admin extends JFrame{
             }
         });
     }
-    public static void main(String[] args) /*throws NoSuchAlgorithmException, InvalidKeySpecException*/ {
+    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
         new Admin();
         //System.out.println(Hash.checkPassword("1000:0abc237210424b0282d190978414ef73:19beed38f09dc00969329e7e094882eca747ee016af8b3bb233902d47dabeecff333a68a2e9bf15903078e529777d1f17be089f560195d18e19585a95f992b64","123456789"));
-
     }
 }
