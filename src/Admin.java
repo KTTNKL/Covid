@@ -4,6 +4,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.DriverManager;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,8 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-
 
 class ManagerObject {
     private String ID;
@@ -277,8 +277,15 @@ public class Admin extends JFrame{
                 else ID = "MA" + String.valueOf(numOfID);
 
                 String username = ID + tYOBM.getText();
-                String password = "123456789";
-                addManager(ID, password, username);
+
+
+                try {
+                    addManager(ID, Hash.getPasswordHash("123456789"), username);
+                } catch (NoSuchAlgorithmException ex) {
+                    ex.printStackTrace();
+                } catch (InvalidKeySpecException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
         blockButton.addActionListener(new ActionListener() {
@@ -304,7 +311,9 @@ public class Admin extends JFrame{
             }
         });
     }
-    public static void main(String[] args){
+    public static void main(String[] args) /*throws NoSuchAlgorithmException, InvalidKeySpecException*/ {
         new Admin();
+        //System.out.println(Hash.checkPassword("1000:0abc237210424b0282d190978414ef73:19beed38f09dc00969329e7e094882eca747ee016af8b3bb233902d47dabeecff333a68a2e9bf15903078e529777d1f17be089f560195d18e19585a95f992b64","123456789"));
+
     }
 }

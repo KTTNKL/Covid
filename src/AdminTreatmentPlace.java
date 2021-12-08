@@ -94,6 +94,7 @@ public class AdminTreatmentPlace extends JFrame {
         ));
 
     }
+
     void addTreamentPlace(String ID){
         String sql = "INSERT INTO TreatmentPlace (PlaceID, Name, Capacity, CurrentPeople) VALUES(?,?,?,?)";
 
@@ -109,6 +110,30 @@ public class AdminTreatmentPlace extends JFrame {
             System.out.println(ecpt.getMessage());
         }
 
+    }
+    void updateTreatmentPlace(String ID, String name, int cap, int num){
+        String sql = "UPDATE TreatmentPlace SET Name = ?, Capacity = ? WHERE PlaceID = ?";
+
+        System.out.println(ID);
+        System.out.println(name);
+        System.out.println(cap);
+
+        if(!tTreatmentName.getText().equals("")) name = tTreatmentName.getText();
+        if(!tTreatmentCapicity.getText().equals("")) cap = Integer.parseInt(tTreatmentCapicity.getText());
+
+
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            // set the corresponding param
+            pstmt.setString(1, name);
+            pstmt.setInt(2, cap);
+            pstmt.setString(3,ID);
+            // update
+            pstmt.executeUpdate();
+            loadTreamentPlace();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
     public AdminTreatmentPlace(){
         String url = "jdbc:sqlite:D:/Java/Covid/src/covid.db";
@@ -137,6 +162,17 @@ public class AdminTreatmentPlace extends JFrame {
                 else ID = "MA" + String.valueOf(numOfID);
 
                 addTreamentPlace(ID);
+            }
+        });
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = table1.getSelectedRow();
+                if(selectedIndex >= 0){
+                    TreatmentPlace place = values.get(selectedIndex);
+                    int option = JOptionPane.showConfirmDialog(null, "Do you want to change information of this treatment place");
+                    if(option == 0) updateTreatmentPlace(values.get(selectedIndex).getPlaceID(), values.get(selectedIndex).getName(), values.get(selectedIndex).getCap(), values.get(selectedIndex).getNumPeople());
+                }
             }
         });
     }
