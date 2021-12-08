@@ -2,6 +2,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -40,7 +42,7 @@ public class User extends JFrame {
     ArrayList<PurchaseObject> listPurchase;
     UserObject currentUser;
 
-    public User(){
+    public User(String CurrentUserID) throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         setContentPane(UserPanel);
         setTitle("Treatment Places");
@@ -48,10 +50,22 @@ public class User extends JFrame {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setVisible(true);
         showPackageTable();
-        showActivityTable("US001");
-        showPurchaseTable("US001");
-        showUserInformation("US001");
-
+        showActivityTable(CurrentUserID);
+        showPurchaseTable(CurrentUserID);
+        showUserInformation(CurrentUserID);
+        Connect app = new Connect();
+        if(Hash.checkPassword(app.getPassword(CurrentUserID),"123456789")){
+            String result = (String)JOptionPane.showInputDialog(
+                    null,
+                    "This is the first time admin log in, you need to change password",
+                    "Change Password",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    "123456789"
+            );
+            app.updatePassword(CurrentUserID, Hash.getPasswordHash(result));
+        }
         findButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -101,11 +115,11 @@ public class User extends JFrame {
                     int opt=JOptionPane.showConfirmDialog(null,"Do you want to buy this package");
                     if(opt==0){
                         try {
-                            if(app.CheckLimitTimeUserBuyPackage("US001",pkg.getPackageID())){
-                                if(app.CheckLimitUserBuyPackage("US001",pkg.getPackageID())) {
-                                    app.UserBuyPackage("US001", pkg.getPackageID(), pkg.getPrice());
-                                    showPurchaseTable("US001");
-                                    showUserInformation("US001");
+                            if(app.CheckLimitTimeUserBuyPackage(CurrentUserID,pkg.getPackageID())){
+                                if(app.CheckLimitUserBuyPackage(CurrentUserID,pkg.getPackageID())) {
+                                    app.UserBuyPackage(CurrentUserID, pkg.getPackageID(), pkg.getPrice());
+                                    showPurchaseTable(CurrentUserID);
+                                    showUserInformation(CurrentUserID);
                                 }else{
                                     JOptionPane.showMessageDialog(null,
                                             "You have reached the limit",
@@ -141,6 +155,14 @@ public class User extends JFrame {
                     sortByID(listPackage);
                     showPackageTable(listPackage);
                 }
+            }
+        });
+        payButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Connect app = new Connect();
+                app.pay(CurrentUserID);
+                showUserInformation(CurrentUserID);
             }
         });
     }
@@ -348,6 +370,16 @@ class PurchaseObject{
 class Connect {
     private Connection connect() {
         String url = "jdbc:sqlite:src/covid.db";
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return conn;
+    }
+    private Connection connectAccount() {
+        String url = "jdbc:sqlite:src/account.db";
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(url);
@@ -600,11 +632,12 @@ class Connect {
             System.out.println(e.getMessage());
         }
 
-        sql ="SELECT COUNT(*) FROM PurchaseHistory WHERE PackageID=?";
+        sql ="SELECT COUNT(*) FROM PurchaseHistory WHERE PackageID=? and UserID=?";
         try {
             conn = this.connect();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, PackageID);
+            pstmt.setString(2, UserID);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 count = rs.getInt(1);
@@ -680,10 +713,91 @@ class Connect {
             System.out.println(e.getMessage());
         }
     }
+    public void pay(String UserID){
+        String sql = "SELECT Debt FROM User WHERE UserID=?";
+        int value=0;
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                value = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+
+        sql = "SELECT AccountBalance FROM Account WHERE UserID=?";
+        int current=0;
+        try {
+            Connection conn = this.connectAccount();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                current = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        current-=value;
+        sql = "UPDATE Account SET AccountBalance=? WHERE UserID=?";
+        try {
+            Connection conn = this.connectAccount();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, current);
+            pstmt.setString(2, UserID);
+            pstmt.execute();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+        sql = "UPDATE User SET Debt=0 WHERE UserID=?";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            pstmt.execute();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    public String getPassword(String UserID){
+        String sql = "SELECT Password FROM User WHERE UserID=?";
+        String password="";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                password = rs.getString(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+
+        }
+        return password;
+    }
+    public void updatePassword(String UserID, String password){
+        String sql = "UPDATE User SET Password = ? WHERE UserID = ?";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            // set the corresponding param
+            pstmt.setString(1, password);
+            pstmt.setString(2, UserID);
+            // update
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 }
 class UserRun{
-    public static void main(String[] args) {
-
-            new User();
+    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
+            new User("US002");
     }
 }

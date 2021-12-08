@@ -277,7 +277,7 @@ public class Admin extends JFrame{
     }
 
     public Admin() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        String url = "jdbc:sqlite:D:/Java/Covid/src/covid.db";
+        String url = "jdbc:sqlite:src/covid.db";
         conn = null;
         try {
             conn = DriverManager.getConnection(url);
