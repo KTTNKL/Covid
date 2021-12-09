@@ -325,7 +325,7 @@ public class ManagerPackage extends JFrame{
     private JScrollPane tablePackage;
     private JPanel ManagerPackagePanel;
     private JButton backButtonManger;
-
+    private JLabel labelPurchase;
 
 
     List<Manager_PackageObject> listPackage = new ArrayList<>();
@@ -336,6 +336,7 @@ public class ManagerPackage extends JFrame{
         setSize(5000,2000);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setVisible(true);
+        setpkgStatistic();
         Manager_showPackageTable();
         addButton.addActionListener(new ActionListener() {
             @Override
@@ -368,6 +369,7 @@ public class ManagerPackage extends JFrame{
                     int Stock = Integer.parseInt(tStock.getText()) ;
                     Manager_PackageObject pkg = new Manager_PackageObject(PackageID, Name, Limit, Limit_time, Price, Stock);
                     ManagePackage.insert(pkg);
+                    setpkgStatistic();
                     Manager_showPackageTable();
                 }
             }
@@ -384,6 +386,7 @@ public class ManagerPackage extends JFrame{
                     // yes is 0, no is 1, cancel is 2
                     if (opt == 0) {
                         ManagePackage.delete(pkg.getID());
+                        setpkgStatistic();
                         Manager_showPackageTable();
                     }
                 }
@@ -463,6 +466,7 @@ public class ManagerPackage extends JFrame{
                         // yes is 0, no is 1, cancel is 2
                         if (opt == 0) {
                             ManagePackage.update(pkg);
+                            setpkgStatistic();
                             Manager_showPackageTable();
                         }
                     }
@@ -535,6 +539,10 @@ public class ManagerPackage extends JFrame{
         ));
         clearTextField();
     }
+
+    public void setpkgStatistic(){
+        this.labelPurchase.setText("Number of purchases:    "+String.valueOf(countPurchaseHistory()));
+    }
     private void clearTextField(){
         tPkgName.setText("");
         tQuantity.setText("");
@@ -553,6 +561,44 @@ public class ManagerPackage extends JFrame{
         }
         return pattern.matcher(strNum).matches();
     }
+
+    public int countPurchaseHistory(){
+        int count =0;
+        Connection connection = null;
+        Statement statement = null;
+        try {
+            //lay tat ca danh sach cac user
+            connection = DriverManager.getConnection("jdbc:sqlite:src/covid.db");
+
+            //query
+            String sql = "SELECT * FROM PurchaseHistory";
+            statement = connection.createStatement();
+            ResultSet res = statement.executeQuery(sql);
+
+            while (res.next()) {
+                count ++;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(ManagePackage.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if(statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManagePackage.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ManagePackage.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return count;
+    }
+
     private void sortByPackageName(List<Manager_PackageObject> pkgList){
         int i, j;
         Manager_PackageObject key;

@@ -2,6 +2,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -651,7 +653,7 @@ class ManageUser{
 
 
             statement.setString(1, id);
-            statement.setInt(2, 500000);
+            statement.setInt(2, 2000000);
 
 
 
@@ -698,16 +700,52 @@ public class Manager<tableModel> extends JFrame {
     private JPanel ManagerPanel;
     private JComboBox comboBox1;
     private JTextField tTreatmentPlace;
+    private JLabel labelF3;
+    private JLabel labelF2;
+    private JLabel labelF1;
+    private JLabel labelF0;
+    private JLabel labelCured;
+    private JLabel labelStateTransition;
+    private JLabel labelDebt;
+    private JButton btnLogout;
 
 
     List<UserObject> userList = new ArrayList<>();
 
     public Manager(String CurrentUserID){
+        Connect app = new Connect();
+
+        try {
+            if(Hash.checkPassword(app.getPassword(CurrentUserID),"123456789")){
+                Boolean flag=true;
+                while(flag){
+                    String result = (String)JOptionPane.showInputDialog(
+                            null,
+                            "This is the first time Manager log in, you need to change password",
+                            "Change Password",
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            null,
+                            ""
+                    );
+                    if(result!=null && !result.equals("")) {
+                        app.updatePassword(CurrentUserID, Hash.getPasswordHash(result));
+                        flag=false;
+                    }
+                }
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
 
         setContentPane(ManagerPanel);
         setTitle("Manager");
         setSize(5000,2000);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setStatistic();
+
 
         setVisible(true);
         showUser();
@@ -746,10 +784,18 @@ public class Manager<tableModel> extends JFrame {
                 String State = tState.getText();
                 String Source = tSource.getText();
                 String Treatment = tTreatmentPlace.getText();
-                UserObject  usr = new UserObject(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, State, 0, "123456789", UserID+String.valueOf(YearOfBirth), "User", null, Source, Treatment);
-                //usr.show();
+                    UserObject  usr = null;
+                    try {
+                        usr = new UserObject(UserID, FirstName, LastName, YearOfBirth, City, District, Ward, State, 0, Hash.getPasswordHash("123456789"), UserID+String.valueOf(YearOfBirth), "User", null, Source, Treatment);
+                    } catch (NoSuchAlgorithmException ex) {
+                        ex.printStackTrace();
+                    } catch (InvalidKeySpecException ex) {
+                        ex.printStackTrace();
+                    }
+                    //usr.show();
                 ManageUser.insert(usr);
                 ManageUser.insertAccount(UserID);
+                setStatistic();
                 showUser();
                 }
             }
@@ -766,6 +812,7 @@ public class Manager<tableModel> extends JFrame {
                     // yes is 0, no is 1, cancel is 2
                     if (opt == 0) {
                         ManageUser.delete(usr.getUserid());
+                        setStatistic();
                         showUser();
                     }
                 }
@@ -871,6 +918,7 @@ public class Manager<tableModel> extends JFrame {
                         // yes is 0, no is 1, cancel is 2
                         if (opt == 0) {
                             ManageUser.update(usr);
+                            setStatistic();
                             showUser();
                         }
                     }
@@ -923,6 +971,13 @@ public class Manager<tableModel> extends JFrame {
 
             }
         });
+        btnLogout.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Login();
+                dispose();
+            }
+        });
     }
 
 
@@ -952,6 +1007,15 @@ public class Manager<tableModel> extends JFrame {
         clearTextField();
     }
 
+    private void setStatistic(){
+        this.labelF3.setText("F3: "+String.valueOf(countF("F3")));
+        this.labelF2.setText("F2: "+String.valueOf(countF("F2")));
+        this.labelF1.setText("F1: "+String.valueOf(countF("F1")));
+        this.labelF0.setText("F0: "+String.valueOf(countF("F0")));
+        this.labelCured.setText("Cured: "+String.valueOf(countF("Cured")));
+        this.labelStateTransition.setText("Number of State Transition:  "+String.valueOf(countStateTrasition()));
+        this.labelDebt.setText("Total Debt:  "+ String.valueOf(countTotalDebt()));
+    }
     private void clearTextField(){
         tFName.setText("");
         tLName.setText("");
@@ -1006,12 +1070,42 @@ public class Manager<tableModel> extends JFrame {
         }
         return pattern.matcher(strNum).matches();
     }
+    public int countF(String type){
+        int count =0;
+        List<UserObject> userList =  ManageUser.ViewAll();
+        for(int i=0; i<userList.size(); ++i){
+            if(userList.get(i).getState().compareTo(type)==0)
+            {
+                count ++;
+            }
+        }
+        return count;
+    }
 
+    public int countStateTrasition(){
+        int count = 0;
+        List<Manager_ActivityObject> activityList = ManageActivity.ViewAll();
+        for(int i=0; i<activityList.size(); ++i){
+            if(activityList.get(i).getType().compareTo("State")==0){
+                count ++;
+            }
+        }
+        return count;
+    }
+
+    public int countTotalDebt(){
+        int total = 0;
+        List<UserObject> userList =  ManageUser.ViewAll();
+        for(int i=0; i<userList.size(); ++i){
+            total += userList.get(i).getDebt();
+        }
+        return total;
+    }
 
     public List<UserObject> find_f_after(UserObject usr){
         List<UserObject> userList =  ManageUser.ViewAll();
         List<UserObject> related = new ArrayList<>();
-        if(usr.getState().compareTo("Khoi benh")!=0){
+        if(usr.getState().compareTo("Cured")!=0){
             for(int i=0; i<userList.size(); ++i)
             {
                 if(userList.get(i).getSource()!=null) {
@@ -1025,7 +1119,14 @@ public class Manager<tableModel> extends JFrame {
         return related;
 
     }
-    public static void main(String[] args){
-        new Manager("MA002");
-    }
+//    public static void main(String[] args){
+//        try {
+//            System.out.print(Hash.getPasswordHash("123456789"));
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        } catch (InvalidKeySpecException e) {
+//            e.printStackTrace();
+//        }
+//        new Manager("MA002");
+//    }
 }
