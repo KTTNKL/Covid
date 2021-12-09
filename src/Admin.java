@@ -86,7 +86,6 @@ public class Admin extends JFrame{
     private JTextField tCityM;
     private JTextField tDistrictM;
     private JButton addButton;
-    private JButton activityButton;
     private JButton blockButton;
     private JButton updateButton;
     private JTable table1;
@@ -353,6 +352,13 @@ public class Admin extends JFrame{
                     int option = JOptionPane.showConfirmDialog(null, "Do you want to change information of this Manger");
                     if(option == 0) updateInformation(values.get(selectedIndex).getID(),values.get(selectedIndex).getFirstName(),values.get(selectedIndex).getLastName(),values.get(selectedIndex).getYear(), values.get(selectedIndex).getCity(), values.get(selectedIndex).getDistrict(), values.get(selectedIndex).getWard());
                 }
+            }
+        });
+        treatmentPlaceButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new AdminTreatmentPlace();
+                dispose();
             }
         });
     }

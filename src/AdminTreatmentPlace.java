@@ -5,6 +5,8 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -173,6 +175,19 @@ public class AdminTreatmentPlace extends JFrame {
                     int option = JOptionPane.showConfirmDialog(null, "Do you want to change information of this treatment place");
                     if(option == 0) updateTreatmentPlace(values.get(selectedIndex).getPlaceID(), values.get(selectedIndex).getName(), values.get(selectedIndex).getCap(), values.get(selectedIndex).getNumPeople());
                 }
+            }
+        });
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    new Admin();
+                } catch (NoSuchAlgorithmException ex) {
+                    ex.printStackTrace();
+                } catch (InvalidKeySpecException ex) {
+                    ex.printStackTrace();
+                }
+                dispose();
             }
         });
     }

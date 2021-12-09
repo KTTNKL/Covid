@@ -96,14 +96,6 @@
           <text value="Add"/>
         </properties>
       </component>
-      <component id="59a6e" class="javax.swing.JButton" binding="activityButton" default-binding="true">
-        <constraints>
-          <grid row="7" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <text value="Activity"/>
-        </properties>
-      </component>
       <component id="8ea95" class="javax.swing.JButton" binding="blockButton" default-binding="true">
         <constraints>
           <grid row="7" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
