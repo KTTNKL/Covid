@@ -43,6 +43,26 @@ public class User extends JFrame {
     UserObject currentUser;
 
     public User(String CurrentUserID) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        Connect app = new Connect();
+
+        if(Hash.checkPassword(app.getPassword(CurrentUserID),"123456789")){
+            Boolean flag=true;
+            while(flag){
+                String result = (String)JOptionPane.showInputDialog(
+                    null,
+                    "This is the first time user log in, you need to change password",
+                    "Change Password",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    ""
+            );
+                if(result!=null && !result.equals("")) {
+                    app.updatePassword(CurrentUserID, Hash.getPasswordHash(result));
+                    flag=false;
+                }
+            }
+        }
 
         setContentPane(UserPanel);
         setTitle("Treatment Places");
@@ -53,19 +73,7 @@ public class User extends JFrame {
         showActivityTable(CurrentUserID);
         showPurchaseTable(CurrentUserID);
         showUserInformation(CurrentUserID);
-        Connect app = new Connect();
-        if(Hash.checkPassword(app.getPassword(CurrentUserID),"123456789")){
-            String result = (String)JOptionPane.showInputDialog(
-                    null,
-                    "This is the first time admin log in, you need to change password",
-                    "Change Password",
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    null,
-                    "123456789"
-            );
-            app.updatePassword(CurrentUserID, Hash.getPasswordHash(result));
-        }
+
         findButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -163,6 +171,13 @@ public class User extends JFrame {
                 Connect app = new Connect();
                 app.pay(CurrentUserID);
                 showUserInformation(CurrentUserID);
+            }
+        });
+        logoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Login();
+                dispose();
             }
         });
     }
@@ -780,6 +795,23 @@ class Connect {
         }
         return password;
     }
+    public String getPasswordFromName(String UserID){
+        String sql = "SELECT Password FROM User WHERE Username=?";
+        String password="";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                password = rs.getString(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+
+        }
+        return password;
+    }
     public void updatePassword(String UserID, String password){
         String sql = "UPDATE User SET Password = ? WHERE UserID = ?";
         try {
@@ -795,9 +827,36 @@ class Connect {
             System.out.println(e.getMessage());
         }
     }
-}
-class UserRun{
-    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
-            new User("US002");
+    public Boolean isLockManager(String UserID){
+        String sql = "SELECT ManagerLock FROM User WHERE Username = ?";
+        Boolean lock=true;
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, UserID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                lock = rs.getBoolean(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        return lock;
+    }
+    public String GetID(String Username){
+        String sql = "SELECT UserID FROM User WHERE Username = ?";
+        String ID="";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, Username);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                ID = rs.getString(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        return ID;
     }
 }

@@ -28,9 +28,7 @@ public class Login extends JFrame {
                             JOptionPane.WARNING_MESSAGE);
                 }else {
                     Connect app = new Connect();
-                    String password=app.getPassword(tfUsername.getText()); //Tu database
-                    System.out.println(password);//Tu login frame
-
+                    String password=app.getPasswordFromName(tfUsername.getText()); //Tu database
                     if(password.equals("")){
                         JOptionPane.showMessageDialog(null,
                                 "Username or Password is incorrect",
@@ -44,11 +42,23 @@ public class Login extends JFrame {
                                 dispose();
 
                             }else if(tfUsername.getText().startsWith("M")){
-                                new Manager(tfUsername.getText());
-                                dispose();
+                                if(app.isLockManager(tfUsername.getText())){
+                                    JOptionPane.showMessageDialog(null,
+                                            "This manager is locked",
+                                            "Cannot login",
+                                            JOptionPane.WARNING_MESSAGE);
+                                }else{
+
+                                    System.out.println(password);
+
+                                    String ID=app.GetID(tfUsername.getText());
+                                    new Manager(ID);
+                                    dispose();
+                                }
 
                             }else{
-                                new User(tfUsername.getText());
+                                String ID=app.GetID(tfUsername.getText());
+                                new User(ID);
                                 dispose();
                             }
                         }else{

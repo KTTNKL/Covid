@@ -286,16 +286,22 @@ public class Admin extends JFrame{
             System.out.println(e.getMessage());
         }
         if(Hash.checkPassword(getPasswordAdmin("AD001"),"123456789")){
-            String result = (String)JOptionPane.showInputDialog(
+            Boolean flag=true;
+            while(flag){
+                String result = (String)JOptionPane.showInputDialog(
                     null,
                     "This is the first time admin log in, you need to change password",
                     "Change Password",
                     JOptionPane.PLAIN_MESSAGE,
                     null,
                     null,
-                    "123456789"
+                    ""
             );
-            updatePassword("AD001", Hash.getPasswordHash(result));
+                if(result!=null && !result.equals("")) {
+                    updatePassword("AD001", Hash.getPasswordHash(result));
+                    flag=false;
+                }
+            }
         }
         loadData();
 
@@ -349,9 +355,5 @@ public class Admin extends JFrame{
                 }
             }
         });
-    }
-    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        new Admin();
-        //System.out.println(Hash.checkPassword("1000:0abc237210424b0282d190978414ef73:19beed38f09dc00969329e7e094882eca747ee016af8b3bb233902d47dabeecff333a68a2e9bf15903078e529777d1f17be089f560195d18e19585a95f992b64","123456789"));
     }
 }
