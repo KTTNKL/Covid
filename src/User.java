@@ -7,6 +7,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -125,9 +126,17 @@ public class User extends JFrame {
                         try {
                             if(app.CheckLimitTimeUserBuyPackage(CurrentUserID,pkg.getPackageID())){
                                 if(app.CheckLimitUserBuyPackage(CurrentUserID,pkg.getPackageID())) {
-                                    app.UserBuyPackage(CurrentUserID, pkg.getPackageID(), pkg.getPrice());
-                                    showPurchaseTable(CurrentUserID);
-                                    showUserInformation(CurrentUserID);
+                                    if(app.CheckStock(pkg.getPackageID())){
+                                        app.UserBuyPackage(CurrentUserID, pkg.getPackageID(), pkg.getPrice());
+                                        showPurchaseTable(CurrentUserID);
+                                        showUserInformation(CurrentUserID);
+                                        showPackageTable();
+                                    }else{
+                                        JOptionPane.showMessageDialog(null,
+                                                "Current stock for this package is 0",
+                                                "Can not buy package",
+                                                JOptionPane.WARNING_MESSAGE);
+                                    }
                                 }else{
                                     JOptionPane.showMessageDialog(null,
                                             "You have reached the limit",
@@ -609,7 +618,12 @@ class Connect {
         }catch (SQLException e){
             System.out.println(e.getMessage());
         }
-        LocalDate firstDay = LocalDate.parse(date, formatter);
+        LocalDate firstDay=null;
+        try{
+            firstDay = LocalDate.parse(date, formatter);}
+        catch (DateTimeException ex){
+            return true;
+        }
         LocalDate limitDay=firstDay.plusDays(limit_time);
 
 
@@ -726,6 +740,51 @@ class Connect {
             pstmt.execute();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+        }
+        sql = "SELECT Stock FROM Package WHERE PackageID=?";
+        int currentStock=0;
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, PackageID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                currentStock = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        currentStock-=1;
+
+        sql = "UPDATE Package SET Stock=? WHERE PackageID=?";
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, currentStock);
+            pstmt.setString(2, PackageID);
+            pstmt.execute();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    public boolean CheckStock(String packageID) {
+        String sql = "SELECT Stock FROM Package WHERE PackageID=?";
+        int currentStock=0;
+        try {
+            Connection conn = this.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, packageID);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                currentStock = rs.getInt(1);
+            }
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        if(currentStock==0){
+            return false;
+        }else{
+            return true;
         }
     }
     public void pay(String UserID){
@@ -859,4 +918,6 @@ class Connect {
         }
         return ID;
     }
+
+
 }
