@@ -605,7 +605,7 @@ class ManageUser{
             connection = DriverManager.getConnection("jdbc:sqlite:src/Covid.db");
 
             //query
-            String sql = "select * from User where firstname like ?";
+            String sql = "select * from User where firstname like ? and UserType='User'";
             statement = connection.prepareStatement(sql);
             statement.setString(1, "%" + firstname + "%");
 
@@ -930,7 +930,7 @@ public class Manager<tableModel> extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 userList = ManageUser.ViewAll();
-                String input = JOptionPane.showInputDialog("Find", "Enter firstname to search");
+                String input = JOptionPane.showInputDialog("Find By First Name", "Enter firstname to search");
                 if (input != null && input.length() > 0) {
                     userList = ManageUser.SearchByFirstname(input);
                     String data[][] = new String[userList.size()][];

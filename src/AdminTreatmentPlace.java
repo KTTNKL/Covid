@@ -45,7 +45,7 @@ public class AdminTreatmentPlace extends JFrame {
     List<TreatmentPlace> values;
 
     List<String []> getCurrentPeople(){
-        String sql = "Select P.PlaceID, count(*) as NumUser from TreatmentPlace P,TreatmentPlace_User U where P.PlaceID = U.PlaceID group by P.PlaceID";
+        String sql = "Select P.PlaceID, count(*) as NumUser from TreatmentPlace P,User U where P.PlaceID = U.TreatmentPlace group by P.PlaceID";
         List<String []> currentPeople = new ArrayList<String []>();
 
         try {
@@ -98,14 +98,13 @@ public class AdminTreatmentPlace extends JFrame {
     }
 
     void addTreamentPlace(String ID){
-        String sql = "INSERT INTO TreatmentPlace (PlaceID, Name, Capacity, CurrentPeople) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO TreatmentPlace (PlaceID, Name, Capacity) VALUES(?,?,?)";
 
         try{
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, ID);
             pstmt.setString(2, tTreatmentName.getText());
             pstmt.setInt(3, Integer.valueOf(tTreatmentCapicity.getText()));
-            pstmt.setInt(4, 0);
             pstmt.executeUpdate();
             loadTreamentPlace();
         } catch (SQLException ecpt) {

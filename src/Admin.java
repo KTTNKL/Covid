@@ -94,7 +94,7 @@ public class Admin extends JFrame{
     private JScrollPane tableAdmin;
     private JPanel AdminPanel;
 
-    private String[] columnNames = { "ID", "First Name", "Last Name", "YearOfBirth", "City", "District", "Ward", "UserName", "Password", "UserType", "Lock", "Activities" };;
+    private String[] columnNames = { "ID", "First Name", "Last Name", "YearOfBirth", "City", "District", "Ward", "UserName", "UserType", "Lock", "Activities" };;
     private Connection conn;
 
     List<ManagerObject> values;
@@ -145,7 +145,7 @@ public class Admin extends JFrame{
         List<String[]> temp = new ArrayList<String[]>();
 
         for(int i = 0; i < values.size();i++){
-            temp.add(new String[] {values.get(i).getID(),values.get(i).getFirstName(),values.get(i).getLastName(),Integer.toString(values.get(i).getYear()),values.get(i).getCity(), values.get(i).getDistrict(), values.get(i).getWard(), values.get(i).getUserName(), values.get(i).getPassword(), values.get(i).getType(), Boolean.toString(values.get(i).getManagerLock()), values.get(i).getAct()});
+            temp.add(new String[] {values.get(i).getID(),values.get(i).getFirstName(),values.get(i).getLastName(),Integer.toString(values.get(i).getYear()),values.get(i).getCity(), values.get(i).getDistrict(), values.get(i).getWard(), values.get(i).getUserName(), values.get(i).getType(), Boolean.toString(values.get(i).getManagerLock()), values.get(i).getAct()});
         }
 
         table1.setModel(new DefaultTableModel(
