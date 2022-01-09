@@ -357,6 +357,11 @@ public class Admin extends JFrame{
         treatmentPlaceButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                try {
+                    conn.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
                 new AdminTreatmentPlace();
                 dispose();
             }

@@ -180,6 +180,11 @@ public class AdminTreatmentPlace extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
+                    conn.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+                try {
                     new Admin();
                 } catch (NoSuchAlgorithmException ex) {
                     ex.printStackTrace();
